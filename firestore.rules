@@ -1,0 +1,110 @@
+/**
+ * This ruleset enforces a strict security model for a portfolio builder application.
+ *
+ * Core Philosophy:
+ * The model provides strong user-data isolation while allowing for controlled public sharing.
+ * It uses a combination of path-based security for private user data and attribute-based
+ * security for publicly shared data.
+ *
+ * Data Structure:
+ * 1. /users/{userId}: Stores private user profile information. Access is restricted to the owner.
+ * 2. /users/{userId}/portfolios/{portfolioId}: Stores the user's private portfolio data.
+ *    This path-based ownership ensures only the user can access their own portfolios.
+ * 3. /public_portfolios/{portfolioId}: A top-level collection for portfolios that users
+ *    have explicitly made public. This structural segregation allows for safe public read
+ *    and list operations while restricting writes to the original owner.
+ *
+ * Key Security Decisions:
+ * - User Enumeration is Disallowed: Listing documents from the top-level `/users` collection is prohibited.
+ * - Strict Ownership by Default: All data within the `/users/{userId}` tree is accessible only to the authenticated user matching {userId}.
+ * - Denormalization for Authorization: The `Portfolio` document contains a `userId` field. This is critical for securing writes to the `/public_portfolios` collection without needing slow and costly `get()` calls to other documents.
+ * - Structural Segregation: Private portfolios (`/users/{userId}/portfolios`) and public portfolios (`/public_portfolios`) are in separate collections. This is a deliberate design choice that makes securing list operations simple, performant, and highly secure. Public listing is safe on `/public_portfolios`, while private listing is scoped to the owner in their subcollection.
+ *
+ * Prototyping Mode:
+ * These rules enforce strict authorization (who can access what) but are flexible on data shapes (the exact fields in a document) to allow for rapid development and iteration. Data validation is limited only to fields essential for authorization and relational integrity (e.g., owner IDs).
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for reusable logic
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Checks if the requesting user's UID matches the document's owner ID.
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Checks for ownership on an existing document. Used for update/delete.
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    // Validates that critical, immutable fields are not changed during an update.
+    function areImmutableFieldsUnchanged_User() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    // Validates that a new user document has a consistent ID.
+    function hasValidData_User_Create(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    // Validates that critical, immutable fields are not changed during an update.
+    function areImmutableFieldsUnchanged_Portfolio() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    // Validates that a new portfolio has a consistent owner ID linking it to its path.
+    function hasValidData_Portfolio_Create(userId) {
+      return request.resource.data.userId == userId;
+    }
+
+    /**
+     * @description Controls access to a user's private profile document.
+     * @path /users/{userId}
+     * @allow A user (uid: "user123") can (create) their own profile at /users/user123.
+     * @deny A user (uid: "user456") cannot (get) or (update) the profile at /users/user123.
+     * @principle Restricts access to a user's own data tree and prevents user enumeration.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && hasValidData_User_Create(userId);
+      allow update: if isExistingOwner(userId) && areImmutableFieldsUnchanged_User();
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Manages a user's private portfolios, stored in a subcollection.
+     * @path /users/{userId}/portfolios/{portfolioId}
+     * @allow A user (uid: "user123") can (list) all documents in /users/user123/portfolios.
+     * @deny An anonymous user cannot (get) any portfolio from this collection.
+     * @principle Enforces strict ownership. Access is granted based on the user ID in the path, ensuring data privacy.
+     */
+    match /users/{userId}/portfolios/{portfolioId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && hasValidData_Portfolio_Create(userId);
+      allow update: if isExistingOwner(userId) && areImmutableFieldsUnchanged_Portfolio();
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Manages publicly readable portfolios.
+     * @path /public_portfolios/{portfolioId}
+     * @allow Any user, including unauthenticated ones, can (get) or (list) portfolios.
+     * @deny A user (uid: "user456") cannot (update) a portfolio where the `userId` field is "user123".
+     * @principle Implements a "Public Read, Owner Write" model. Writes are authorized by checking the denormalized `userId` field within the document itself.
+     */
+    match /public_portfolios/{portfolioId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if resource != null && isOwner(resource.data.userId) && areImmutableFieldsUnchanged_Portfolio();
+      allow delete: if resource != null && isOwner(resource.data.userId);
+    }
+  }
+}
