@@ -1,5 +1,10 @@
-# Firebase Studio
-
-This is a NextJS starter in Firebase Studio.
-
-To get started, take a look at src/app/page.tsx.
+<img width="1351" height="584" alt="Screenshot 2026-04-25 234246" src="https://github.com/user-attachments/assets/d3e94aba-9976-42a6-af1c-a19a69021c4c" />
+<img width="1347" height="496" alt="Screenshot 2026-04-25 234156" src="https://github.com/user-attachments/assets/afc7632e-91fc-41bd-93c0-26bd46d00578" />
+<img width="1349" height="596" alt="Screenshot 2026-04-25 234033" src="https://github.com/user-attachments/assets/d22d1c49-7115-41a6-8f6c-821749e9d103" />
+<img width="1365" height="589" alt="Screenshot 2026-04-25 233913" src="https://github.com/user-attachments/assets/5daa3541-a6c9-4559-a0c7-c8494bc56994" />
+<img width="1365" height="586" alt="Screenshot 2026-04-25 233731" src="https://github.com/user-attachments/assets/3ffe2dcc-664b-4cc7-a4d6-dfe06774834b" />
+<img width="1348" height="571" alt="Screenshot 2026-04-25 233538" src="https://github.com/user-attachments/assets/d7a64dec-3d0d-4cfe-9fa7-0c34ce79c488" />
+<img width="1334" height="595" alt="Screenshot 2026-04-25 230222" src="https://github.com/user-attachments/assets/c2bfaa55-2078-4313-bdbd-e2c9f9a4ea6d" />
+<img width="689" height="577" alt="Screenshot 2026-04-25 232540" src="https://github.com/user-attachments/assets/9a7e4a60-5681-4650-aac4-99a7a3c42bd1" />
+<img width="1329" height="594" alt="Screenshot 2026-04-25 235933" src="https://github.com/user-attachments/assets/47316046-384a-4698-8f80-e7f68d549dba" />
+<img width="1314" height="577" alt="Screenshot 2026-04-25 235751" src="https://github.com/user-attachments/assets/3f2fa850-e18b-4966-b6bf-f261959b2d6d" />
